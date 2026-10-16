@@ -123,11 +123,7 @@ void mmmul(size_t m, size_t n, const float* A, const float* B, float* C) {
 /**
  * 3. 矩阵乘法主力引擎：C = A(mxk) * B(nxk) -> (mxn)
  */
-void mmdot(size_t m, size_t n, size_t k,
-           const float* __restrict__ A, 
-           const float* __restrict__ B, 
-           float* __restrict__ C) {
-    
+void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const float* __restrict__ B, float* __restrict__ C) {    
     // 动态多线程调度（大规模并行，小规模单线程避免开销）[cite: 1, 2]
     #pragma omp parallel for collapse(2) if (m * n * k > 65536)
     for (size_t i = 0; i < m; ++i) {
