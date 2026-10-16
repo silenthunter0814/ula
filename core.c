@@ -133,3 +133,18 @@ void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const floa
         }
     }
 }
+
+
+/**
+ * 矩阵物理转置函数 (mtrans)
+ *   src:  源矩阵指针（大小为 rows * cols）
+ *   dst:  目标矩阵指针（调用者需预先分配好大小为 cols * rows 的连续空间）
+ */
+void mtrans(size_t rows, size_t cols, const float* __restrict__ src, float* __restrict__ dst) {
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < cols; ++c) {
+            // 原矩阵的第 r 行第 c 列 -> 转置后矩阵的第 c 行第 r 列
+            dst[c * rows + r] = src[r * cols + c];
+        }
+    }
+}
