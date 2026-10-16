@@ -64,7 +64,7 @@ void vvmul(const float* __restrict__ a, const float* __restrict__ b, float* __re
 }
 
 /**
- * 4. 高性能向量点积：sum = a · b（四路并行累加，打破 FMA 延迟链）
+ * 4. 高性能向量点积：sum = a @ b（四路并行累加，打破 FMA 延迟链）
  */
 float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) {
     size_t i = 0;
@@ -109,7 +109,7 @@ float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) 
 
 
 /**
- * 1. 矩阵加法：C = A + B (支持任意 m x n 连续矩阵)
+ * 矩阵加法：C = A + B (支持任意 m x n 连续矩阵)
  */
 void mmadd(size_t m, size_t n, const float* A, const float* B, float* C) {
     // 连续矩阵加法可以直接降维成一维长向量加法
@@ -117,14 +117,14 @@ void mmadd(size_t m, size_t n, const float* A, const float* B, float* C) {
 }
 
 /**
- * 2. 矩阵对位乘法 (Hadamard 积)：C = A ⊙ B
+ * 矩阵对位乘法 (Hadamard 积)：C = A * B
  */
 void mmmul(size_t m, size_t n, const float* A, const float* B, float* C) {
     vvmul(A, B, C, m * n);
 }
 
 /**
- * 3. 矩阵乘法主力引擎：C = A(mxk) * B(nxk) -> (mxn)
+ * 矩阵乘法主力引擎：C = A(mxk) @ B(nxk) -> (mxn)
  */
 void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const float* __restrict__ B, float* __restrict__ C) {    
     // 动态多线程调度（大规模并行，小规模单线程避免开销）[cite: 1, 2]
@@ -154,7 +154,7 @@ void mtrans(size_t rows, size_t cols, const float* __restrict__ src, float* __re
 
 
 /**
- * 1. 矩阵标量加法：C = A + scalar (每个元素加 scalar)
+ * 矩阵标量加法：C = A + scalar (每个元素加 scalar)
  */
 void msadd(size_t m, size_t n, const float* A, float scalar, float* C) {
     size_t total = m * n;
@@ -164,7 +164,7 @@ void msadd(size_t m, size_t n, const float* A, float scalar, float* C) {
 }
 
 /**
- * 2. 矩阵标量乘法：C = A * scalar (每个元素乘 scalar)
+ * 矩阵标量乘法：C = A * scalar (每个元素乘 scalar)
  */
 void msmul(size_t m, size_t n, const float* A, float scalar, float* C) {
     size_t total = m * n;
@@ -173,29 +173,9 @@ void msmul(size_t m, size_t n, const float* A, float scalar, float* C) {
     }
 }
 
-/**
- * 3. 矩阵向量加法：Y = A(m x n) + x(n) (按行广播相加)
- */
-void mvadd(size_t m, size_t n, const float* A, const float* x, float* Y) {
-    for (size_t i = 0; i < m; ++i) {
-        for (size_t j = 0; j < n; ++j) {
-            Y[i * n + j] = A[i * n + j] + x[j];
-        }
-    }
-}
 
 /**
- * 4. 矩阵向量乘法：y = A(m x n) * x(n) -> y(m)
- * （注：标准的矩阵乘向量，行优先下每行与 x 做点积）
- */
-void mvmul(size_t m, size_t n, const float* A, const float* x, float* y) {
-    for (size_t i = 0; i < m; ++i) {
-        y[i] = dot_simd(A + i * n, x, n);
-    }
-}
-
-/**
- * 5. 传统矩阵乘法：C = A(m x k) * B(k x n) -> C(m x n)
+ * 传统矩阵乘法：C = A(m x k) @ B(k x n) -> C(m x n)
  * 采用栈/堆自适应策略对 B 进行转置，随后复用底层的 mmdot 引擎
  */
 void mmtdot(size_t m, size_t n, size_t k, const float* A, const float* B, float* C) {
