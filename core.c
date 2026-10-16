@@ -156,7 +156,7 @@ void mtrans(size_t rows, size_t cols, const float* __restrict__ src, float* __re
 /**
  * 矩阵标量加法：C = A + scalar (每个元素加 scalar)
  */
-void msadd(size_t m, size_t n, const float* A, float scalar, float* C) {
+void msadd(size_t m, size_t n, const float* __restrict__ A, float scalar, float* __restrict__ C) {
     size_t total = m * n;
     for (size_t i = 0; i < total; ++i) {
         C[i] = A[i] + scalar;
@@ -166,7 +166,7 @@ void msadd(size_t m, size_t n, const float* A, float scalar, float* C) {
 /**
  * 矩阵标量乘法：C = A * scalar (每个元素乘 scalar)
  */
-void msmul(size_t m, size_t n, const float* A, float scalar, float* C) {
+void msmul(size_t m, size_t n, const float* __restrict__ A, float scalar, float* __restrict__ C) {
     size_t total = m * n;
     for (size_t i = 0; i < total; ++i) {
         C[i] = A[i] * scalar;
