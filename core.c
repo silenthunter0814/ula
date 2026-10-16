@@ -103,3 +103,37 @@ float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) 
     
     return result;
 }
+
+
+/**
+ * 1. 矩阵加法：C = A + B (支持任意 m x n 连续矩阵)
+ */
+void mmadd(size_t m, size_t n, const float* A, const float* B, float* C) {
+    // 连续矩阵加法可以直接降维成一维长向量加法
+    vvadd(A, B, C, m * n);
+}
+
+/**
+ * 2. 矩阵对位乘法 (Hadamard 积)：C = A ⊙ B
+ */
+void mmmul(size_t m, size_t n, const float* A, const float* B, float* C) {
+    vvmul(A, B, C, m * n);
+}
+
+/**
+ * 3. 矩阵乘法主力引擎：C = A(mxk) * B(nxk) -> (mxn)
+ */
+void mmdot(size_t m, size_t n, size_t k,
+           const float* __restrict__ A, 
+           const float* __restrict__ B, 
+           float* __restrict__ C) {
+    
+    // 动态多线程调度（大规模并行，小规模单线程避免开销）[cite: 1, 2]
+    #pragma omp parallel for collapse(2) if (m * n * k > 65536)
+    for (size_t i = 0; i < m; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            // A 的第 i 行与 B 的第 j 行进行重定义点积
+            C[i * n + j] = vvdot(A + i * k, B + j * k, k);
+        }
+    }
+}
