@@ -1,4 +1,7 @@
 #include <stddef.h>
+#include <stdlib.h>
+
+#define STACK_BUF_SIZE 4096
 
 // 定义一个包含 8 个 float 的向量类型（对应 256 位 SIMD，如 AVX2 或 Neon 8-wide）
 // 编译器会根据目标平台自动将其映射为最优的硬件向量寄存器
@@ -146,5 +149,80 @@ void mtrans(size_t rows, size_t cols, const float* __restrict__ src, float* __re
             // 原矩阵的第 r 行第 c 列 -> 转置后矩阵的第 c 行第 r 列
             dst[c * rows + r] = src[r * cols + c];
         }
+    }
+}
+
+
+/**
+ * 1. 矩阵标量加法：C = A + scalar (每个元素加 scalar)
+ */
+void msadd(size_t m, size_t n, const float* A, float scalar, float* C) {
+    size_t total = m * n;
+    for (size_t i = 0; i < total; ++i) {
+        C[i] = A[i] + scalar;
+    }
+}
+
+/**
+ * 2. 矩阵标量乘法：C = A * scalar (每个元素乘 scalar)
+ */
+void msmul(size_t m, size_t n, const float* A, float scalar, float* C) {
+    size_t total = m * n;
+    for (size_t i = 0; i < total; ++i) {
+        C[i] = A[i] * scalar;
+    }
+}
+
+/**
+ * 3. 矩阵向量加法：Y = A(m x n) + x(n) (按行广播相加)
+ */
+void mvadd(size_t m, size_t n, const float* A, const float* x, float* Y) {
+    for (size_t i = 0; i < m; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            Y[i * n + j] = A[i * n + j] + x[j];
+        }
+    }
+}
+
+/**
+ * 4. 矩阵向量乘法：y = A(m x n) * x(n) -> y(m)
+ * （注：标准的矩阵乘向量，行优先下每行与 x 做点积）
+ */
+void mvmul(size_t m, size_t n, const float* A, const float* x, float* y) {
+    for (size_t i = 0; i < m; ++i) {
+        y[i] = dot_simd(A + i * n, x, n);
+    }
+}
+
+/**
+ * 5. 传统矩阵乘法：C = A(m x k) * B(k x n) -> C(m x n)
+ * 采用栈/堆自适应策略对 B 进行转置，随后复用底层的 mmdot 引擎
+ */
+void mmtdot(size_t m, size_t n, size_t k, const float* A, const float* B, float* C) {
+    size_t total_elements = k * n;
+    float local_stack_buf[STACK_BUF_SIZE];
+    
+    float* worker = NULL;
+    int onheap = 0; // 0 表示使用栈空间，1 表示使用堆内存
+
+    // 严格基于栈空间大小的安全决策
+    if (total_elements <= STACK_BUF_SIZE) {
+        worker = local_stack_buf;
+        onheap = 0;
+    } else {
+        worker = (float*)malloc(total_elements * sizeof(float));
+        // 若堆分配失败，可在此处做降级或错误处理
+        onheap = 1;
+    }
+
+    // 将传统矩阵 B (k x n) 转置为 worker (n x k)，以完美契合 mmdot 的 B_trans 契约
+    mtrans(k, n, B, worker);
+
+    // 调用主力矩阵乘法引擎
+    mmdot(m, n, k, A, worker, C);
+
+    // 用后释放（仅当走堆内存时）
+    if (onheap) {
+        free(worker);
     }
 }
