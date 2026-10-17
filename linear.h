@@ -6,6 +6,7 @@
 typedef float v8sf __attribute__((vector_size(32)));
 
 void mmadd(size_t m, size_t n, const float *A, const float *B, float *C);
+void mmsub(size_t m, size_t n, const float *A, const float *B, float *C); 
 void mmmul(size_t m, size_t n, const float *A, const float *B, float *C);
 void mmdot(size_t m, size_t n, size_t k, const float *__restrict__ A, const float *__restrict__ B, float *__restrict__ C);
 

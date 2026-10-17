@@ -105,6 +105,11 @@ void mmadd(size_t m, size_t n, const float* A, const float* B, float* C) {
     vvadd(A, B, C, m * n);
 }
 
+/* C = A - B */
+void mmsub(size_t m, size_t n, const float *A, const float *B, float *C) {
+    vvsub(A, B, C, m * n);
+}
+
 /* C = A * B */
 void mmmul(size_t m, size_t n, const float* A, const float* B, float* C) {
     vvmul(A, B, C, m * n);
