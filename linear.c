@@ -99,6 +99,14 @@ static float vsum(const float *__restrict__ a, size_t n)
     return total;
 }
 
+/* ----- Matrix Transpose ----- */
+void mtrans(size_t rows, size_t cols, const float *__restrict__ src, float *__restrict__ dst)
+{
+    for (size_t r = 0; r < rows; ++r)
+        for (size_t c = 0; c < cols; ++c)
+            dst[c * rows + r] = src[r * cols + c];
+}
+
 /* ----- Matrix OP ----- */
 /* C = A + B */
 void mmadd(size_t m, size_t n, const float* A, const float* B, float* C) {
@@ -123,6 +131,28 @@ void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const floa
             C[i * n + j] = vvdot(A + i * k, B + j * k, k);  /* C[i, j] = A[i] @ B[j] */
 }
 
+/* C = A(m x k) @ B.T( k x n) -> (m x n) */
+void mmtdot(size_t m, size_t n, size_t k, const float *A, const float *B, float *C)
+{
+    size_t total_elements = k * n;
+    float local_stack_buf[STACK_BUF_SIZE];
+
+    float *worker = NULL;
+    int onheap = 0;
+
+    if (total_elements <= STACK_BUF_SIZE)
+        worker = local_stack_buf;
+    else
+    {
+        worker = (float *)malloc(total_elements * sizeof(float));
+        // error
+        onheap = 1;
+    }
+    mtrans(k, n, B, worker);
+    mmdot(m, n, k, A, worker, C);
+    if (onheap)
+        free(worker);
+}
 
 /* ----- Matrix - Scale OP ----- */
 /* C = A + scalar */
@@ -137,36 +167,6 @@ void msmul(size_t m, size_t n, const float* __restrict__ A, float scalar, float*
     size_t total = m * n;
     for (size_t i = 0; i < total; ++i) 
         C[i] = A[i] * scalar;
-}
-
-/* Matrix Transpose */
-void mtrans(size_t rows, size_t cols, const float *__restrict__ src, float *__restrict__ dst)
-{
-    for (size_t r = 0; r < rows; ++r)
-        for (size_t c = 0; c < cols; ++c)
-            dst[c * rows + r] = src[r * cols + c];
-}
-
-
-/* ----- C = A(m x k) @ B.T( k x n) -> (m x n) ----- */
-void mmtdot(size_t m, size_t n, size_t k, const float* A, const float* B, float* C) {
-    size_t total_elements = k * n;
-    float local_stack_buf[STACK_BUF_SIZE];
-    
-    float* worker = NULL;
-    int onheap = 0;
-
-    if (total_elements <= STACK_BUF_SIZE) 
-        worker = local_stack_buf;
-    else {
-        worker = (float*)malloc(total_elements * sizeof(float));
-        // error
-        onheap = 1;
-    }
-    mtrans(k, n, B, worker);
-    mmdot(m, n, k, A, worker, C);
-    if (onheap) 
-        free(worker);
 }
 
 
@@ -205,4 +205,76 @@ void msum_col(size_t m, size_t n, const float *__restrict__ A, float *__restrict
 
     if (onheap)
         free(worker);
+}
+
+
+/* ----- Squared Error ----- */
+/* SE = sum(E^2) */
+float SE(size_t m, size_t n, const float *e)
+{
+    size_t total = m * n;
+    float local_stack[STACK_BUF_SIZE];
+    float *e2 = NULL;
+    int onheap = 0;
+
+    if (total <= STACK_BUF_SIZE)
+        e2 = local_stack;
+    else {
+        e2 = (float *)malloc(total * sizeof(float));
+        if (!e2)
+            return 0.0f;
+        onheap = 1;
+    }
+    mmmul(m, n, e, e, e2);
+    float se = msum(m, n, e2);
+
+    if (onheap)
+        free(e2);
+
+    return se;
+}
+
+/* MSE = SE / (m * n) */
+float MSE(size_t m, size_t n, const float *e)
+{
+    size_t total = m * n;
+    if (total == 0)
+        return 0.0f;
+    float se = SE(m, n, e);
+    return se / (float)total;
+}
+
+/* SE2 = sum((y - t)^2) */
+float SE2(size_t m, size_t n, const float *y, const float *t)
+{
+    size_t total = m * n;
+    float local_stack[STACK_BUF_SIZE];
+    float *e = NULL;
+    int onheap = 0;
+
+    if (total <= STACK_BUF_SIZE)
+        e = local_stack;
+    else {
+        e = (float *)malloc(total * sizeof(float));
+        if (!e)
+            return 0.0f;
+        onheap = 1;
+    }
+    mmsub(m, n, y, t, e);
+    float se = SE(m, n, e);
+
+    if (onheap)
+        free(e);
+
+    return se;
+}
+
+/* MSE2 = SE2 / (m * n) */
+float MSE2(size_t m, size_t n, const float *y, const float *t)
+{
+    size_t total = m * n;
+    if (total == 0)
+        return 0.0f;
+    float se = SE2(m, n, y, t);
+    return se / (float)total;
 }
