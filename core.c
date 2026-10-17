@@ -167,3 +167,42 @@ void mmtdot(size_t m, size_t n, size_t k, const float* A, const float* B, float*
     if (onheap) 
         free(worker);
 }
+
+
+/* ----- Matrix Sum ----- */
+
+/* matrix sum all */
+float msum(size_t m, size_t n, const float *__restrict__ A) {
+    return vsum(A, m * n);
+}
+
+/* sum(axis=1)) */
+void msum_row(size_t m, size_t n, const float *__restrict__ A, float *__restrict__ y) {
+    for (size_t i = 0; i < m; ++i)
+        y[i] = vsum(A + i * n, n);
+}
+
+/* sum(axis=0)) */
+void msum_col(size_t m, size_t n, const float *__restrict__ A, float *__restrict__ y)
+{
+    size_t total_elements = m * n;
+    float local_stack_buf[STACK_BUF_SIZE];
+
+    float *worker = NULL;
+    int onheap = 0; 
+
+    if (total_elements <= STACK_BUF_SIZE)
+        worker = local_stack_buf;
+    else {
+        worker = (float *)malloc(total_elements * sizeof(float));
+            // error
+        onheap = 1;
+    }
+
+    mtrans(m, n, A, worker);
+    for (size_t j = 0; j < n; ++j)
+        y[j] = vsum(worker + j * m, m);
+
+    if (onheap)
+        free(worker);
+}
