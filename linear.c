@@ -142,8 +142,7 @@ void mmtdot(size_t m, size_t n, size_t k, const float *A, const float *B, float 
 
     if (total_elements <= STACK_BUF_SIZE)
         worker = local_stack_buf;
-    else
-    {
+    else {
         worker = (float *)malloc(total_elements * sizeof(float));
         // error
         onheap = 1;
