@@ -1,13 +1,8 @@
-#include <stddef.h>
-#include <stdlib.h>
-
-#define STACK_BUF_SIZE 4096
-
-typedef float v8sf __attribute__((vector_size(32)));
+#include "linear.h"
 
 /* ----- Vector OP ----- */
 /* c = a + b */
-void vvadd(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
+static void vvadd(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
     size_t i = 0;
     size_t step = sizeof(v8sf) / sizeof(float); // 8 
     
@@ -22,7 +17,7 @@ void vvadd(const float* __restrict__ a, const float* __restrict__ b, float* __re
 }
 
 /* c = a - b */
-void vvsub(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
+static void vvsub(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
     size_t i = 0;
     size_t step = sizeof(v8sf) / sizeof(float);
     
@@ -37,7 +32,7 @@ void vvsub(const float* __restrict__ a, const float* __restrict__ b, float* __re
 }
 
 /* c = a * b */
-void vvmul(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
+static void vvmul(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
     size_t i = 0;
     size_t step = sizeof(v8sf) / sizeof(float);
     
@@ -52,7 +47,7 @@ void vvmul(const float* __restrict__ a, const float* __restrict__ b, float* __re
 }
 
 /* sum = a @ b */
-float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) {
+static float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) {
     size_t i = 0;
     size_t step = sizeof(v8sf) / sizeof(float);       
     size_t unroll_step = step * 4;              
@@ -85,7 +80,7 @@ float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) 
 }
 
 /* sum = sum(a[0...n-1]) */
-float vsum(const float *__restrict__ a, size_t n)
+static float vsum(const float *__restrict__ a, size_t n)
 {
     size_t i = 0;
     size_t step = sizeof(v8sf) / sizeof(float); 
@@ -123,13 +118,6 @@ void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const floa
             C[i * n + j] = vvdot(A + i * k, B + j * k, k);  /* C[i, j] = A[i] @ B[j] */
 }
 
-/* Matrix Transpose */
-void mtrans(size_t rows, size_t cols, const float* __restrict__ src, float* __restrict__ dst) {
-    for (size_t r = 0; r < rows; ++r) 
-        for (size_t c = 0; c < cols; ++c) 
-            dst[c * rows + r] = src[r * cols + c];
-}
-
 
 /* ----- Matrix - Scale OP ----- */
 /* C = A + scalar */
@@ -144,6 +132,14 @@ void msmul(size_t m, size_t n, const float* __restrict__ A, float scalar, float*
     size_t total = m * n;
     for (size_t i = 0; i < total; ++i) 
         C[i] = A[i] * scalar;
+}
+
+/* Matrix Transpose */
+void mtrans(size_t rows, size_t cols, const float *__restrict__ src, float *__restrict__ dst)
+{
+    for (size_t r = 0; r < rows; ++r)
+        for (size_t c = 0; c < cols; ++c)
+            dst[c * rows + r] = src[r * cols + c];
 }
 
 
