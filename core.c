@@ -84,6 +84,25 @@ float vvdot(const float* __restrict__ a, const float* __restrict__ b, size_t n) 
     return result;
 }
 
+/* sum = sum(a[0...n-1]) */
+float vsum(const float *__restrict__ a, size_t n)
+{
+    size_t i = 0;
+    size_t step = sizeof(v8sf) / sizeof(float); 
+
+    v8sf sum_vec = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    for (; i + step <= n; i += step)
+        sum_vec = *(const v8sf *)(a + i) + sum_vec;
+
+    float temp[8];
+    *(v8sf *)temp = sum_vec;
+    float total = temp[0] + temp[1] + temp[2] + temp[3] + temp[4] + temp[5] + temp[6] + temp[7];
+
+    for (; i < n; ++i)
+        total += a[i];
+
+    return total;
+}
 
 /* ----- Matrix OP ----- */
 /* C = A + B */
