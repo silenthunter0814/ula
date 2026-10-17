@@ -170,7 +170,6 @@ void mmtdot(size_t m, size_t n, size_t k, const float* A, const float* B, float*
 
 
 /* ----- Matrix Sum ----- */
-
 /* matrix sum all */
 float msum(size_t m, size_t n, const float *__restrict__ A) {
     return vsum(A, m * n);
