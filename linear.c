@@ -305,7 +305,7 @@ float converge(size_t m, size_t n, const float *e0, const float *e, float toc)
     float mse = MSE(m, n, e);
     float mse0 = MSE(m, n, e0);
 
-    if (mse <= mse0 && mse0 <= toc * toc && mse <= toc * toc)
+    if (mse <= mse0 && mse0 <= toc * toc)
         return mse; 
 
     return -1.0f;
