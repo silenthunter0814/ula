@@ -1,6 +1,6 @@
 #include "linear.h"
 
-typedef float v8sf __attribute__((vector_size(32)));
+typedef float v8sf __attribute__((vector_size(32), aligned(1)));
 
 /* ----- Vector OP ----- */
 /* c = a + b */
