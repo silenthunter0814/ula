@@ -281,21 +281,12 @@ float MSE2(size_t m, size_t n, const float *y, const float *t)
 }
 
 
-/* ----- vector math function call -----*/
-/* unary vector  function: y = f(x) */
-void vmap_1arg(f1 f, const float *__restrict__ x, float *__restrict__ y, size_t n)
+/* ----- vector map function call -----*/
+void vmf(FUNC f, const float *__restrict__ x, float *__restrict__ y, size_t n)
 {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < n; ++i)
         y[i] = f(x[i]);
-}
-
-/* binary vector function: z = f(x, y) */
-void vmap_2arg(f2 f, const float *__restrict__ x, const float *__restrict__ y, float *__restrict__ z, size_t n)
-{
-#pragma omp parallel for schedule(static)
-    for (size_t i = 0; i < n; ++i)
-        z[i] = f(x[i], y[i]);
 }
 
 
