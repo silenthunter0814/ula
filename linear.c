@@ -1,5 +1,7 @@
 #include "linear.h"
 
+typedef float v8sf __attribute__((vector_size(32)));
+
 /* ----- Vector OP ----- */
 /* c = a + b */
 static void vvadd(const float* __restrict__ a, const float* __restrict__ b, float* __restrict__ c, size_t n) {
@@ -125,7 +127,7 @@ void mmmul(size_t m, size_t n, const float* A, const float* B, float* C) {
 
 /* C = A(m x k) @ B( n x k) -> (m x n)*/
 void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const float* __restrict__ B, float* __restrict__ C) {    
-    #pragma omp parallel for collapse(2) if (m * n * k > 65536)
+#pragma omp parallel for collapse(2) if (m * n * k > 65536)
     for (size_t i = 0; i < m; ++i) 
         for (size_t j = 0; j < n; ++j) 
             C[i * n + j] = vvdot(A + i * k, B + j * k, k);  /* C[i, j] = A[i] @ B[j] */
@@ -276,4 +278,35 @@ float MSE2(size_t m, size_t n, const float *y, const float *t)
         return 0.0f;
     float se = SE2(m, n, y, t);
     return se / (float)total;
+}
+
+
+/* ----- vector math function call -----*/
+/* unary vector  function: y = f(x) */
+void vmap_1arg(f1 f, const float *__restrict__ x, float *__restrict__ y, size_t n)
+{
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < n; ++i)
+        y[i] = f(x[i]);
+}
+
+/* binary vector function: z = f(x, y) */
+void vmap_2arg(f2 f, const float *__restrict__ x, const float *__restrict__ y, float *__restrict__ z, size_t n)
+{
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < n; ++i)
+        z[i] = f(x[i], y[i]);
+}
+
+
+/* ----- Error converge function ----- */
+float converge(size_t m, size_t n, const float *e0, const float *e, float toc)
+{
+    float mse = MSE(m, n, e);
+    float mse0 = MSE(m, n, e0);
+
+    if (mse <= mse0 && mse0 <= toc * toc && mse <= toc * toc)
+        return mse; 
+
+    return -1.0f;
 }

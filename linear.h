@@ -1,9 +1,15 @@
 #include <stddef.h>
 #include <stdlib.h>
+#include <math.h>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #define STACK_BUF_SIZE 4096
 
-typedef float v8sf __attribute__((vector_size(32)));
+typedef float (*f1)(float);
+typedef float (*f2)(float, float);
 
 void mtrans(size_t rows, size_t cols, const float *__restrict__ src, float *__restrict__ dst);
 
@@ -24,3 +30,7 @@ float SE(size_t m, size_t n, const float *e);
 float MSE(size_t m, size_t n, const float *e);
 float SE2(size_t m, size_t n, const float *y, const float *t);
 float MSE2(size_t m, size_t n, const float *y, const float *t);
+
+void vmap_1arg(f1 f, const float *__restrict__ x, float *__restrict__ y, size_t n) ;
+
+float converge(size_t m, size_t n, const float *e0, const float *e, float toc);
