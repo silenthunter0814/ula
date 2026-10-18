@@ -16,7 +16,7 @@ void mmadd(size_t m, size_t n, const float *A, const float *B, float *C);
 void mmsub(size_t m, size_t n, const float *A, const float *B, float *C); 
 void mmmul(size_t m, size_t n, const float *A, const float *B, float *C);
 void mmdot(size_t m, size_t n, size_t k, const float *__restrict__ A, const float *__restrict__ B, float *__restrict__ C);
-void mmtdot(size_t m, size_t n, size_t k, const float *A, const float *B, float *C);
+void mmtdot(size_t m, size_t k, size_t n, const float *A, const float *B, float *C);
 
 void msadd(size_t m, size_t n, const float *__restrict__ A, float scalar, float *__restrict__ C);
 void msmul(size_t m, size_t n, const float *__restrict__ A, float scalar, float *__restrict__ C);

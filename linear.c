@@ -134,7 +134,7 @@ void mmdot(size_t m, size_t n, size_t k, const float* __restrict__ A, const floa
 }
 
 /* C = A(m x k) @ B.T( k x n) -> (m x n) */
-void mmtdot(size_t m, size_t n, size_t k, const float *A, const float *B, float *C)
+void mmtdot(size_t m, size_t k, size_t n, const float *A, const float *B, float *C)
 {
     size_t total_elements = k * n;
     float local_stack_buf[STACK_BUF_SIZE];
